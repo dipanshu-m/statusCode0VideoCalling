@@ -1,12 +1,191 @@
+
+let spoken = 'en'
+function getTranslationFromEnglishToHindi(sourcetext) {
+    payload = {
+        "pipelineTasks": [
+            {
+                "taskType": "translation",
+                "config": {
+                    "language": {
+                        "sourceLanguage": "en",
+                        "targetLanguage": "hi"
+                    },
+                    "serviceId": "ai4bharat/indictrans-v2-all-gpu--t4"
+                }
+            }
+        ],
+        "inputData": {
+            "input": [
+                {
+                    "source": sourcetext
+                }
+            ]
+        }
+    }
+    console.log(payload);
+    return axios.post(uri,
+        payload, {
+        headers: {
+            Authorization: AuthorizationToken,
+            'Content-Type': 'application/json',
+            'ulcaApiKey': ulcaApiKey,
+            'userId': userId
+        }
+    }).then((res) => {
+        // console.log(res.data.pipelineResponse[0].output[0].target)
+        return res.data.pipelineResponse[0].output[0].target;
+    })
+}
+
+
+function getTranslationFromHindiToEnglish(sourcetext) {
+    payload = {
+        "pipelineTasks": [
+            {
+                "taskType": "translation",
+                "config": {
+                    "language": {
+                        "sourceLanguage": "hi",
+                        "targetLanguage": "en"
+                    },
+                    "serviceId": "ai4bharat/indictrans-v2-all-gpu--t4"
+                }
+            }
+        ],
+        "inputData": {
+            "input": [
+                {
+                    "source": sourcetext
+                }
+            ]
+        }
+    }
+    console.log(payload);
+    return axios.post(uri,
+        payload, {
+        headers: {
+            Authorization: AuthorizationToken,
+            'Content-Type': 'application/json',
+            'ulcaApiKey': ulcaApiKey,
+            'userId': userId
+        }
+    }).then((res) => {
+        // console.log(res.data.pipelineResponse[0].output[0].target)
+        return res.data.pipelineResponse[0].output[0].target;
+    })
+}
+
+function speakInHindi(event) {
+    // Create a new SpeechSynthesisUtterance object
+    let utterance = new SpeechSynthesisUtterance();
+    utterance.lang = 'hi-IN';
+    // Get the text from the text area
+    let text = event;
+    // Set the text and voice of the utterance
+    utterance.text = text;
+    // let voices = window.speechSynthesis.getVoices();
+    // console.log(voices);
+    // utterance.voice = window.speechSynthesis.getVoices()[10];
+    console.log(utterance);
+    // utterance.voice =
+    // Speak the utterance
+    window.speechSynthesis.speak(utterance);
+}
+
+
+// function speakInEnglish(event) {
+//     // Create a new SpeechSynthesisUtterance object
+//     let utterance = new SpeechSynthesisUtterance();
+//     utterance.lang = 'en-US';
+//     // Get the text from the text area
+//     let text = event;
+//     // Set the text and voice of the utterance
+//     utterance.text = text;
+//     // let voices = window.speechSynthesis.getVoices();
+//     // console.log(voices);
+//     // utterance.voice = window.speechSynthesis.getVoices()[10];
+//     console.log(utterance);
+//     // utterance.voice =
+//     // Speak the utterance
+//     window.speechSynthesis.speak(utterance);
+// }
+
+
 const videoGrid = document.getElementById("video_grid");
 const muteBtn = document.getElementById("muteBtn")
 const cameraoff = document.getElementById("cameraoff")
 const selectCam = document.getElementById("selectCam")
 const selectMic = document.getElementById("selectMic")
 const screenShare = document.getElementById("screenShare")
+// const selectTagLanguage = document.getElementById('language');
 
 // socket init 
 const socket = io();
+
+
+// webkit speech recognition
+var speechRecognition = new webkitSpeechRecognition;
+speechRecognition.lang = "en-US";
+let total_result = '';
+speechRecognition.continuous = true;
+speechRecognition.start();
+
+speechRecognition.onresult = (event) => {
+    console.log(event.results[event.resultIndex][0].transcript);
+    socket.emit('recieve_message', (event.results[event.resultIndex][0].transcript));
+    console.log('said: ', event.results[event.resultIndex][0].transcript);
+
+    total_result += '\n' + event.results[event.resultIndex][0].transcript;
+}
+
+// selectTagLanguage.addEventListener('change', (ev) => {
+//     console.log('tag changed!');
+//     var value = selectTagLanguage.options[selectTagLanguage.selectedIndex].value;
+//     console.log(value);
+//     switch (value) {
+//         case 'Speak in Hindi':
+//             // receiveLang = 'en'
+//             spoken = 'hi'
+
+//             delete speechRecognition;
+//             speechRecognition = new webkitSpeechRecognition;
+//             speechRecognition.lang = "hi-IN";
+
+//             speechRecognition.continuous = true;
+//             speechRecognition.start();
+
+//             speechRecognition.onresult = (event) => {
+//                 console.log(event.results[event.resultIndex][0].transcript);
+//                 socket.emit('recieve_message', (event.results[event.resultIndex][0].transcript));
+//                 console.log('said: ', event.results[event.resultIndex][0].transcript);
+
+//                 total_result += '\n' + event.results[event.resultIndex][0].transcript;
+//             }
+//             break;
+//         case 'Speak in English':
+//             // receiveLang = 'en'
+//             spoken = 'en'
+
+//             delete speechRecognition;
+//             speechRecognition = new webkitSpeechRecognition;
+//             speechRecognition.lang = "en-US";
+
+//             speechRecognition.continuous = true;
+//             speechRecognition.start();
+//             speechRecognition.onresult = (event) => {
+//                 console.log(event.results[event.resultIndex][0].transcript);
+//                 socket.emit('recieve_message', (event.results[event.resultIndex][0].transcript));
+//                 console.log('said: ', event.results[event.resultIndex][0].transcript);
+
+//                 total_result += '\n' + event.results[event.resultIndex][0].transcript;
+//             }
+//             break;
+//         default:
+//             console.log('wahts ti=his err');
+//             break;
+//     }
+// })
+
 
 let mediaStream;
 let mute = false;
@@ -23,8 +202,11 @@ muteBtn.addEventListener("click", (e) => {
             .forEach(track => {
                 track.enabled = true;
             })
+        speechRecognition.start();
     } else {
         mute = true;
+        speechRecognition.stop();
+        // console.log(speechRecognition);
         muteBtn.textContent = "Unmute yourself";
         mediaStream.getAudioTracks()
             .forEach(track => {
@@ -91,7 +273,7 @@ async function getMedia(cameraId, micId) {
 
         mediaStream = await window.navigator.mediaDevices.getUserMedia(cameraId || micId ? cameraId ? preferredCameraConstraints : preferredMicConstraints : initialConstraits)
         // send joining notification
-      
+
         displayMedia()
         getAllCameras()
         getAllMics()
@@ -130,7 +312,11 @@ screenShare.addEventListener('click', getScreenMedia)
 // display media
 function displayMedia() {
     const video = document.createElement('video');
-    video.srcObject = mediaStream;
+
+    // prevent our voice from getting heart
+    video.muted = true;
+
+    video.srcObject = mediaStream; //first cam
     video.addEventListener('loadedmetadata', () => {
         video.play()
     })
@@ -209,39 +395,55 @@ function makeWebRTCConnection() {
     RTC = new RTCPeerConnection({
         iceServers: [
             {
-              urls: 'stun:stun1.l.google.com:19302'
+                urls: 'stun:stun1.l.google.com:19302'
             },
             {
-              urls: 'stun:stun3.l.google.com:19302'
+                urls: 'stun:stun3.l.google.com:19302'
             },
             {
-              urls: 'stun:stun4.l.google.com:19302'
+                urls: 'stun:stun4.l.google.com:19302'
             }
-          ]
+        ]
     });
 
     // add media tracks to RTC
     mediaStream.getTracks()
-   .forEach(track => {
-      RTC.addTrack(track,mediaStream )
-  })
+        .forEach(track => {
+            RTC.addTrack(track, mediaStream)
+        })
 
     // send ICE candidate
-  RTC.addEventListener('icecandidate', (data) => {
-    socket.emit( "sendIceCandidate",data.candidate, roomId);
-  })
+    RTC.addEventListener('icecandidate', (data) => {
+        socket.emit("sendIceCandidate", data.candidate, roomId);
+    })
 
-        // send ICE candidate
-  RTC.addEventListener('addstream', (data) => {
-      const videoTag = document.createElement('video');
-      videoTag.srcObject = data.stream;
-      videoTag.addEventListener('loadedmetadata', () => {
-          videoTag.play()
-      })
+    // send ICE candidate
+    RTC.addEventListener('addstream', (data) => {
+        const videoTag = document.createElement('video');
+        console.log(data.stream);
+        videoTag.srcObject = data.stream; //one to fiddle with
+        //-----------------
+        videoTag.muted = true;
+        socket.on('recieve_message', async (data) => {
+            speakInHindi(await getTranslationFromEnglishToHindi(data));
+            // console.log(data);
+            // speakInHindi(await getTranslationFromEnglishToHindi(data));
+            // if (spoken == 'hi')
+            //     speakInHindi(await getTranslationFromEnglishToHindi(data));
+            // else speakInEnglish(await getTranslationFromHindiToEnglish(data));
+            // console.log(await getTranslation(data));
+        })
 
-      videoGrid.appendChild(videoTag)
-  })
-    
+        //-----------------
+
+
+        videoTag.addEventListener('loadedmetadata', () => {
+            videoTag.play()
+        })
+
+        videoGrid.appendChild(videoTag)
+    })
+
 }
 
 
@@ -259,7 +461,7 @@ socket.on("receiveOffer", async (offer) => {
     RTC.setRemoteDescription(offer);
     const answer = await RTC.createAnswer();
     RTC.setLocalDescription(answer);
-    
+
     // send the answer
     socket.emit("sendTheAnswer", answer, roomId)
 })
@@ -287,7 +489,8 @@ socket.on("receiveCandidate", (candidate) => {
 
 
 
-/* 
+/*
     1. RTC connection initialization after media stream ready!
     2. add media tracks to RTC
 */
+// websocket.close();

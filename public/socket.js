@@ -1,7 +1,10 @@
 
 // webRTC
 
-
+// socket.on('recieve_message', (data) => {
+//     console.log(data);
+//     socket.emit('recieve_message', data);
+// })
 
 socket.emit('joinRoom', roomId)
 
@@ -22,7 +25,7 @@ socket.on("receiveOffer", async (offer) => {
     peerConnection.setRemoteDescription(offer);
     const answer = await peerConnection.createAnswer()
     peerConnection.setLocalDescription(answer);
-    socket.emit('answar', answer, roomId)
+    socket.emit('answer', answer, roomId)
 
 })
 
@@ -45,7 +48,7 @@ function makeAWebRTCConnection() {
         console.log(data);
     })
 
-   
+
 
     addTrackToWebRTC()
 }
@@ -60,7 +63,7 @@ function handleCandidate(data) {
 
 socket.on("ice", (candidate) => {
     peerConnection.addICECandidate(candidate)
-  
+
 })
 
 
@@ -84,7 +87,7 @@ async function addTrackToWebRTC() {
     // listing to icecandidate event
     RTC.addEventListener('icecandidate', (data) => {
         // send candidate 
-       
+
         socket.emit("send_ice_candidate", data.candidate, roomId)
     })
 }
@@ -111,11 +114,11 @@ async function makeAnOffer() {
 // get offter 
 socket.on("get_offer", async (offer) => {
     RTC.setRemoteDescription(offer);
-    const answar = await RTC.createAnswer();
-    RTC.setLocalDescription(answar);
+    const answer = await RTC.createAnswer();
+    RTC.setLocalDescription(answer);
 
     // send the answer
-    socket.emit('send_answer', answar, roomId)
+    socket.emit('send_answer', answer, roomId)
 
 })
 
@@ -126,7 +129,7 @@ socket.on("get_answer", (answer) => {
 })
 
 
-socket.on("get_candidate",  (candidate) => {
+socket.on("get_candidate", (candidate) => {
     RTC.addIceCandidate(candidate)
 
 })

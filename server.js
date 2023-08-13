@@ -9,6 +9,7 @@ const expressHTTPServer = http.createServer(app);
 const io = new socketIO.Server(expressHTTPServer);
 
 app.use(express.static('public'))
+app.use(express.static('anuvaad-client-sdk'))
 app.set('view engine', 'ejs')
 
 app.get('/', (req, res) => {
@@ -25,9 +26,13 @@ app.get("/:roomId", (req, res) => {
 })
 
 
-
-
 io.on('connection', (socket) => {
+
+    socket.on('recieve_message', (data) => {
+        console.log(socket.id, data);
+        socket.except(socket.id).emit('recieve_message', data);
+    })
+
 
     // joining a new room
     socket.on('joinRoom', (roomId) => {
